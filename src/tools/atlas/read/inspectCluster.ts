@@ -6,19 +6,19 @@ import { inspectCluster } from "../../../common/atlas/cluster.js";
 import { AtlasArgs } from "../../args.js";
 
 export const InspectClusterArgs = {
-    projectId: AtlasArgs.projectId().describe("Atlas project ID"),
-    clusterName: AtlasArgs.clusterName().describe("Atlas cluster name"),
+    projectId: AtlasArgs.projectId().describe("Atlas项目ID"),
+    clusterName: AtlasArgs.clusterName().describe("Atlas cluster名"),
 };
 
 export class InspectClusterTool extends AtlasToolBase {
     static toolName = "atlas-inspect-cluster";
     public description =
-        "Inspect the current state and metadata of a MongoDB Atlas cluster. " +
-        "Use this to check state: CREATING (still provisioning — check again in a few minutes), " +
-        "IDLE (ready — can be connected to or paused via atlas-pause-cluster), " +
-        "UPDATING, PAUSED (compute billing stopped), DELETING. " +
-        "If state is CREATING, poll again after waiting. " +
-        "Note: atlas-pause-cluster handles CREATING→IDLE waiting automatically — no need to poll manually before pausing.";
+        "查MongoDB Atlas cluster当前状态和元数据。" +
+        "看state:CREATING(仍在配置——几分钟后再查)、" +
+        "IDLE(就绪——可连或经atlas-pause-cluster暂停)、" +
+        "UPDATING、PAUSED(compute计费已停)、DELETING。" +
+        "若state是CREATING,等会再poll。" +
+        "注意:atlas-pause-cluster自动处理CREATING→IDLE等待——暂停前无需手动poll。";
     static operationType: OperationType = "read";
     public argsShape = {
         ...InspectClusterArgs,

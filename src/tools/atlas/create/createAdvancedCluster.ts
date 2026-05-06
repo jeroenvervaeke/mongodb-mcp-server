@@ -40,10 +40,10 @@ const RegionConfigSchema = z.object({
     region: z
         .string()
         .describe(
-            "AWS region name. For single-region clusters, use US_EAST_1 with priority=7. " +
-                "Common values: US_EAST_1 (N. Virginia, lowest cost, primary app region), " +
-                "US_WEST_2 (Oregon), US_EAST_2 (Ohio), EU_WEST_1 (Ireland), AP_SOUTHEAST_1 (Singapore). " +
-                "Use US_EAST_1 for single-region production unless told otherwise."
+            "AWS region名。单region用US_EAST_1+priority=7。" +
+                "常用:US_EAST_1(弗吉尼亚,最便宜,主app region)、" +
+                "US_WEST_2(俄勒冈)、US_EAST_2(俄亥俄)、EU_WEST_1(爱尔兰)、AP_SOUTHEAST_1(新加坡)。" +
+                "单region生产无指示则用US_EAST_1。"
         ),
     nodeCount: z
         .number()
@@ -51,10 +51,10 @@ const RegionConfigSchema = z.object({
         .min(1)
         .default(3)
         .describe(
-            "Electable nodes in this region. Use 3 for single-region. " +
-                "For 3-region HA distribute as 2+2+1 (5 total) or 3+1+1 (5 total). " +
-                "Total electable nodes across all regions must be odd (3, 5, 7) to guarantee quorum; " +
-                "minimum 5 for production HA clusters."
+            "本region electable节点数。单region用3。" +
+                "3-region HA分布2+2+1(共5)或3+1+1(共5)。" +
+                "所有region electable总数须奇(3/5/7)保quorum;" +
+                "生产HA最低5。"
         ),
     priority: z
         .number()
@@ -62,79 +62,74 @@ const RegionConfigSchema = z.object({
         .min(1)
         .max(7)
         .default(7)
-        .describe(
-            "Election priority. 7 = primary region (receives all writes). " +
-                "Secondary regions use 6, 5, 4 … in descending order. " +
-                "Every region must have a unique priority."
-        ),
+        .describe("选举优先级。7=主region(收所有写)。" + "次region用6、5、4…递减。" + "每region优先级唯一。"),
 });
 
 export class CreateAdvancedClusterTool extends AtlasToolBase {
     static toolName = "atlas-create-advanced-cluster";
     public description =
-        "Create a dedicated MongoDB Atlas replica set cluster on AWS. " +
-        "Covers all production patterns: " +
-        "(1) Dev/test: M10, single region, autoScaling=true; " +
-        "(2) Budget production (single-region): M30, US_EAST_1, autoScaling=true, backupEnabled=true; " +
-        "(3) High-availability production (multi-region): M30+, 3 AWS regions (e.g. US_EAST_1 + US_WEST_2 + US_EAST_2), " +
-        "2+2+1 node distribution (5 total electable nodes), autoScaling=true, backupEnabled=true. " +
-        "After creating a production cluster that should be paused, call atlas-pause-cluster next.";
+        "建AWS专享MongoDB Atlas副本集cluster。覆盖所有生产模式:" +
+        "(1)开发/测试:M10,单region,autoScaling=true;" +
+        "(2)省钱生产(单region):M30,US_EAST_1,autoScaling=true,backupEnabled=true;" +
+        "(3)高可用生产(多region):M30+,3个AWS region(如US_EAST_1+US_WEST_2+US_EAST_2)," +
+        "节点分布2+2+1(共5个electable),autoScaling=true,backupEnabled=true。" +
+        "建生产cluster后若需暂停,接着调atlas-pause-cluster。";
     static operationType: OperationType = "create";
 
     public argsShape = {
         projectId: AtlasArgs.projectId().describe(
-            "Atlas project ID. If unknown, call atlas-list-clusters (no projectId) to find all project IDs, " +
-                "or read from bootstrap_outputs.json with: jq -r '.project_id.value' bootstrap_outputs.json"
+            "Atlas项目ID。不知则调atlas-list-clusters(无projectId)看所有项目ID," +
+                "或从bootstrap_outputs.json读:jq -r '.project_id.value' bootstrap_outputs.json"
         ),
-        name: AtlasArgs.clusterName().describe("Cluster name"),
+        name: AtlasArgs.clusterName().describe("cluster名"),
         instanceSize: z
             .enum(INSTANCE_SIZES)
             .default("M10")
             .describe(
-                "Instance size. " +
-                    "M10: cheapest dedicated tier, best for dev/test with light load. " +
-                    "M20: small dev workloads. " +
-                    "M30: MINIMUM for any production workload AND for all HA multi-region clusters — " +
-                    "handles hundreds of concurrent connections, flash-sale bursts via autoscaling, and databases up to ~150 GB. " +
-                    "M40+: high-throughput production, large datasets, or many concurrent connections. " +
-                    "Rule of thumb: use M10 for dev, M30 for production or any HA cluster."
+                "实例规格。" +
+                    "M10:最便宜专享层,适合轻负载开发/测试。" +
+                    "M20:小型开发负载。" +
+                    "M30:任何生产负载和所有HA多region cluster的最低规格——" +
+                    "撑数百并发连接、autoscaling抗flash-sale突增、库≤约150GB。" +
+                    "M40+:高吞吐生产、大库或多并发。" +
+                    "原则:开发用M10,生产或HA用M30。"
             ),
         regions: z
             .array(RegionConfigSchema)
             .min(1)
             .describe(
-                "Region list. " +
-                    "Single-region example: [{region: 'US_EAST_1', nodeCount: 3, priority: 7}]. " +
-                    "3-region HA example (PREFERRED distribution 2+2+1=5 total, NOT 3+3+3=9): " +
-                    "[{region: 'US_EAST_1', nodeCount: 2, priority: 7}, " +
-                    "{region: 'US_WEST_2', nodeCount: 2, priority: 6}, " +
-                    "{region: 'US_EAST_2', nodeCount: 1, priority: 5}]. " +
-                    "HA requirement: 3+ distinct regions, at least 1 electable node in EACH region, total >= 5 and odd."
+                "region列表。" +
+                    "单region例:[{region:'US_EAST_1',nodeCount:3,priority:7}]。" +
+                    "3-region HA例(优选分布2+2+1=5,勿用3+3+3=9):" +
+                    "[{region:'US_EAST_1',nodeCount:2,priority:7}," +
+                    "{region:'US_WEST_2',nodeCount:2,priority:6}," +
+                    "{region:'US_EAST_2',nodeCount:1,priority:5}]。" +
+                    "HA要求:≥3个不同region,每region≥1个electable节点,总数≥5且奇。"
             ),
         autoScaling: z
             .boolean()
             .default(true)
             .describe(
-                "Enable compute AND disk auto-scaling (both always scale together). Defaults to true. " +
-                    "Required for all production clusters and recommended for dev clusters with variable load. " +
-                    "When true, the cluster scales between instanceSize (min) and maxInstanceSize (compute) automatically. " +
-                    "Only set to false for static workloads."
+                "开启compute和disk自动扩缩(始终联动)。默认true。" +
+                    "所有生产cluster必须,变负载开发cluster也建议。" +
+                    "true时cluster在instanceSize(下限)和maxInstanceSize(上限)间自动伸缩。" +
+                    "仅静态负载设false。"
             ),
         maxInstanceSize: z
             .enum(INSTANCE_SIZES)
             .optional()
             .describe(
-                "Upper bound for auto-scaling. If omitted, a sensible ceiling is chosen automatically " +
-                    "(M10→M40, M20→M40, M30→M60, M40→M80, M50→M80, M60→M140). " +
-                    "Must be larger than instanceSize."
+                "自动扩缩上限。不填则自动选合理值" +
+                    "(M10→M40,M20→M40,M30→M60,M40→M80,M50→M80,M60→M140)。" +
+                    "须大于instanceSize。"
             ),
         backupEnabled: z
             .boolean()
             .default(true)
             .describe(
-                "Enable continuous cloud backup (daily snapshots). Defaults to true. " +
-                    "Required for production clusters (M30+). " +
-                    "Only set to false for disposable dev/test clusters where data loss is acceptable."
+                "开启持续云备份(每日快照)。默认true。" +
+                    "生产cluster(M30+)必开。" +
+                    "仅一次性开发/测试cluster可丢数据时设false。"
             ),
     };
 

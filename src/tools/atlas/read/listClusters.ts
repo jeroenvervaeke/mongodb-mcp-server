@@ -12,15 +12,15 @@ import { formatCluster, formatFlexCluster } from "../../../common/atlas/cluster.
 import { AtlasArgs } from "../../args.js";
 
 export const ListClustersArgs = {
-    projectId: AtlasArgs.projectId().describe("Atlas project ID to filter clusters").optional(),
+    projectId: AtlasArgs.projectId().describe("过滤cluster的Atlas项目ID").optional(),
 };
 
 export class ListClustersTool extends AtlasToolBase {
     static toolName = "atlas-list-clusters";
     public description =
-        "List MongoDB Atlas clusters in a project (or across all projects if no projectId given). " +
-        "Returns cluster names, states, and instance info. Use this to verify a cluster was created " +
-        "or to find the name of an existing cluster before calling atlas-inspect-cluster or atlas-pause-cluster.";
+        "列项目里的MongoDB Atlas cluster(无projectId则跨所有项目)。" +
+        "返回cluster名、state和实例信息。用于确认cluster已建," +
+        "或调atlas-inspect-cluster/atlas-pause-cluster前查现有cluster名。";
     static operationType: OperationType = "read";
     public argsShape = {
         ...ListClustersArgs,
