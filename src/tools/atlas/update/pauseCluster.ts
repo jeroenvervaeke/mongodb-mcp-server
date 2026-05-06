@@ -8,11 +8,11 @@ const POLL_TIMEOUT_MS = 25 * 60 * 1000; // 25 minutes
 
 export class PauseClusterTool extends AtlasToolBase {
     static toolName = "atlas-pause-cluster";
-    public description = "暂停cluster停计费。自动等IDLE。";
+    public description = "止群。候IDLE。";
     static operationType: OperationType = "update";
 
     public argsShape = {
-        projectId: AtlasArgs.projectId().describe("项目ID"),
+        projectId: AtlasArgs.projectId().describe("项"),
         clusterName: AtlasArgs.clusterName().describe("名"),
     };
 

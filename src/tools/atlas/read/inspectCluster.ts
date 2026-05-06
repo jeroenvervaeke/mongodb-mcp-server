@@ -6,13 +6,13 @@ import { inspectCluster } from "../../../common/atlas/cluster.js";
 import { AtlasArgs } from "../../args.js";
 
 export const InspectClusterArgs = {
-    projectId: AtlasArgs.projectId().describe("项目ID"),
+    projectId: AtlasArgs.projectId().describe("项"),
     clusterName: AtlasArgs.clusterName().describe("名"),
 };
 
 export class InspectClusterTool extends AtlasToolBase {
     static toolName = "atlas-inspect-cluster";
-    public description = "查cluster状态。";
+    public description = "察群。";
     static operationType: OperationType = "read";
     public argsShape = {
         ...InspectClusterArgs,

@@ -37,24 +37,24 @@ const AUTOSCALE_MAX_DEFAULTS: Record<string, string> = {
 };
 
 const RegionConfigSchema = z.object({
-    region: z.string().describe("AWS region"),
-    nodeCount: z.number().int().min(1).default(3).describe("节点数"),
-    priority: z.number().int().min(1).max(7).default(7).describe("优先级 主=7"),
+    region: z.string().describe("region"),
+    nodeCount: z.number().int().min(1).default(3).describe("数"),
+    priority: z.number().int().min(1).max(7).default(7).describe("序"),
 });
 
 export class CreateAdvancedClusterTool extends AtlasToolBase {
     static toolName = "atlas-create-advanced-cluster";
-    public description = "建Atlas cluster。档:1=测试 M10 单region;2=生产 M30 US_EAST_1;3=HA M30+ 3region 2+2+1。";
+    public description = "造群。试M10一region;产M30 US_EAST_1;高M30+三region二二一。";
     static operationType: OperationType = "create";
 
     public argsShape = {
-        projectId: AtlasArgs.projectId().describe("项目ID"),
+        projectId: AtlasArgs.projectId().describe("项"),
         name: AtlasArgs.clusterName().describe("名"),
         instanceSize: z.enum(INSTANCE_SIZES).default("M10").describe("M10|M20|M30+"),
         regions: z.array(RegionConfigSchema).min(1).describe("[{region,nodeCount,priority}]"),
-        autoScaling: z.boolean().default(true).describe("扩缩"),
-        maxInstanceSize: z.enum(INSTANCE_SIZES).optional().describe("扩缩上限"),
-        backupEnabled: z.boolean().default(true).describe("备份"),
+        autoScaling: z.boolean().default(true).describe("缩"),
+        maxInstanceSize: z.enum(INSTANCE_SIZES).optional().describe("极"),
+        backupEnabled: z.boolean().default(true).describe("备"),
     };
 
     protected async execute({

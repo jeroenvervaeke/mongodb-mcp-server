@@ -7,10 +7,10 @@ import { AtlasArgs } from "../../args.js";
 
 export class CreateFreeClusterTool extends AtlasToolBase {
     static toolName = "atlas-create-free-cluster";
-    public description = "建M0免费cluster。生产用atlas-create-advanced-cluster。";
+    public description = "造M0免群。产用atlas-create-advanced-cluster。";
     static operationType: OperationType = "create";
     public argsShape = {
-        projectId: AtlasArgs.projectId().describe("项目ID"),
+        projectId: AtlasArgs.projectId().describe("项"),
         name: AtlasArgs.clusterName().describe("名"),
         region: AtlasArgs.region().describe("region").default("US_EAST_1"),
     };
