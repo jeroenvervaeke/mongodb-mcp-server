@@ -126,11 +126,11 @@ export class CreateAdvancedClusterTool extends AtlasToolBase {
             ),
         backupEnabled: z
             .boolean()
-            .default(false)
+            .default(true)
             .describe(
-                "Enable continuous cloud backup (daily snapshots). " +
-                    "REQUIRED for all production clusters (M30+). " +
-                    "Set to true whenever creating a production cluster."
+                "Enable continuous cloud backup (daily snapshots). Defaults to true. " +
+                    "Required for production clusters (M30+). " +
+                    "Only set to false for disposable dev/test clusters where data loss is acceptable."
             ),
     };
 

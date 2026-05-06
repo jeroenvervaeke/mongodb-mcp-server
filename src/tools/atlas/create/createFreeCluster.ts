@@ -7,7 +7,10 @@ import { AtlasArgs } from "../../args.js";
 
 export class CreateFreeClusterTool extends AtlasToolBase {
     static toolName = "atlas-create-free-cluster";
-    public description = "Create a free MongoDB Atlas cluster";
+    public description =
+        "Create a free (M0) MongoDB Atlas cluster. M0 is the shared free tier — no compute guarantees, " +
+        "no auto-scaling, no backup, not suitable for production or load-testing. " +
+        "For any dedicated, production, or auto-scaling cluster use atlas-create-advanced-cluster instead.";
     static operationType: OperationType = "create";
     public argsShape = {
         projectId: AtlasArgs.projectId().describe("Atlas project ID to create the cluster in"),

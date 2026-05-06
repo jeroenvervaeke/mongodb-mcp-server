@@ -17,7 +17,10 @@ export const ListClustersArgs = {
 
 export class ListClustersTool extends AtlasToolBase {
     static toolName = "atlas-list-clusters";
-    public description = "List MongoDB Atlas clusters";
+    public description =
+        "List MongoDB Atlas clusters in a project (or across all projects if no projectId given). " +
+        "Returns cluster names, states, and instance info. Use this to verify a cluster was created " +
+        "or to find the name of an existing cluster before calling atlas-inspect-cluster or atlas-pause-cluster.";
     static operationType: OperationType = "read";
     public argsShape = {
         ...ListClustersArgs,
