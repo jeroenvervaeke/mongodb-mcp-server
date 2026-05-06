@@ -20,7 +20,7 @@ export interface Cluster {
     name?: string;
     instanceType: "FREE" | "DEDICATED" | "FLEX";
     instanceSize?: string;
-    state?: "IDLE" | "CREATING" | "UPDATING" | "DELETING" | "REPAIRING";
+    state?: "IDLE" | "CREATING" | "UPDATING" | "DELETING" | "REPAIRING" | "PAUSED";
     mongoDBVersion?: string;
     connectionStrings?: ClusterConnectionStrings;
     processIds?: Array<string>;

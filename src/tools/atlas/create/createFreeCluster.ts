@@ -7,12 +7,12 @@ import { AtlasArgs } from "../../args.js";
 
 export class CreateFreeClusterTool extends AtlasToolBase {
     static toolName = "atlas-create-free-cluster";
-    public description = "Create a free MongoDB Atlas cluster";
+    public description = "造M0免群。产用atlas-create-advanced-cluster。";
     static operationType: OperationType = "create";
     public argsShape = {
-        projectId: AtlasArgs.projectId().describe("Atlas project ID to create the cluster in"),
-        name: AtlasArgs.clusterName().describe("Name of the cluster"),
-        region: AtlasArgs.region().describe("Region of the cluster").default("US_EAST_1"),
+        projectId: AtlasArgs.projectId().describe("项"),
+        name: AtlasArgs.clusterName().describe("名"),
+        region: AtlasArgs.region().describe("region").default("US_EAST_1"),
     };
 
     protected async execute({ projectId, name, region }: ToolArgs<typeof this.argsShape>): Promise<CallToolResult> {

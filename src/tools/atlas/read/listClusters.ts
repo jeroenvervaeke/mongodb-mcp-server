@@ -12,12 +12,12 @@ import { formatCluster, formatFlexCluster } from "../../../common/atlas/cluster.
 import { AtlasArgs } from "../../args.js";
 
 export const ListClustersArgs = {
-    projectId: AtlasArgs.projectId().describe("Atlas project ID to filter clusters").optional(),
+    projectId: AtlasArgs.projectId().describe("项").optional(),
 };
 
 export class ListClustersTool extends AtlasToolBase {
     static toolName = "atlas-list-clusters";
-    public description = "List MongoDB Atlas clusters";
+    public description = "列群。";
     static operationType: OperationType = "read";
     public argsShape = {
         ...ListClustersArgs,
