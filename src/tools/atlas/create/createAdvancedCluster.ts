@@ -37,100 +37,39 @@ const AUTOSCALE_MAX_DEFAULTS: Record<string, string> = {
 };
 
 const RegionConfigSchema = z.object({
-    region: z
-        .string()
-        .describe(
-            "AWS region名。单region用US_EAST_1+priority=7。" +
-                "常用:US_EAST_1(弗吉尼亚,最便宜,主app region)、" +
-                "US_WEST_2(俄勒冈)、US_EAST_2(俄亥俄)、EU_WEST_1(爱尔兰)、AP_SOUTHEAST_1(新加坡)。" +
-                "单region生产无指示则用US_EAST_1。"
-        ),
+    region: z.string().describe("AWS region。默认US_EAST_1。其他:US_WEST_2/US_EAST_2/EU_WEST_1/AP_SOUTHEAST_1。"),
     nodeCount: z
         .number()
         .int()
         .min(1)
         .default(3)
-        .describe(
-            "本region electable节点数。单region用3。" +
-                "3-region HA分布2+2+1(共5)或3+1+1(共5)。" +
-                "所有region electable总数须奇(3/5/7)保quorum;" +
-                "生产HA最低5。"
-        ),
-    priority: z
-        .number()
-        .int()
-        .min(1)
-        .max(7)
-        .default(7)
-        .describe("选举优先级。7=主region(收所有写)。" + "次region用6、5、4…递减。" + "每region优先级唯一。"),
+        .describe("本region electable数。单region→3;HA→2+2+1或3+1+1。总数奇≥5。"),
+    priority: z.number().int().min(1).max(7).default(7).describe("选举优先级。主→7,次→6/5/4。各region唯一。"),
 });
 
 export class CreateAdvancedClusterTool extends AtlasToolBase {
     static toolName = "atlas-create-advanced-cluster";
     public description =
-        "建AWS专享MongoDB Atlas副本集cluster。覆盖所有生产模式:" +
-        "(1)开发/测试:M10,单region,autoScaling=true;" +
-        "(2)省钱生产(单region):M30,US_EAST_1,autoScaling=true,backupEnabled=true;" +
-        "(3)高可用生产(多region):M30+,3个AWS region(如US_EAST_1+US_WEST_2+US_EAST_2)," +
-        "节点分布2+2+1(共5个electable),autoScaling=true,backupEnabled=true。" +
-        "建生产cluster后若需暂停,接着调atlas-pause-cluster。";
+        "建AWS Atlas专享cluster。用例:测试→M10单region;生产省钱→M30 US_EAST_1;" +
+        "HA→M30+ 3 region 2+2+1。autoScaling+backup默认true。生产要暂停接调atlas-pause-cluster。";
     static operationType: OperationType = "create";
 
     public argsShape = {
-        projectId: AtlasArgs.projectId().describe(
-            "Atlas项目ID。不知则调atlas-list-clusters(无projectId)看所有项目ID," +
-                "或从bootstrap_outputs.json读:jq -r '.project_id.value' bootstrap_outputs.json"
-        ),
+        projectId: AtlasArgs.projectId().describe("Atlas项目ID。无→atlas-list-clusters或bootstrap_outputs.json"),
         name: AtlasArgs.clusterName().describe("cluster名"),
         instanceSize: z
             .enum(INSTANCE_SIZES)
             .default("M10")
-            .describe(
-                "实例规格。" +
-                    "M10:最便宜专享层,适合轻负载开发/测试。" +
-                    "M20:小型开发负载。" +
-                    "M30:任何生产负载和所有HA多region cluster的最低规格——" +
-                    "撑数百并发连接、autoscaling抗flash-sale突增、库≤约150GB。" +
-                    "M40+:高吞吐生产、大库或多并发。" +
-                    "原则:开发用M10,生产或HA用M30。"
-            ),
+            .describe("测试→M10;小测试→M20;生产/HA→M30;高吞吐/大库→M40+"),
         regions: z
             .array(RegionConfigSchema)
             .min(1)
             .describe(
-                "region列表。" +
-                    "单region例:[{region:'US_EAST_1',nodeCount:3,priority:7}]。" +
-                    "3-region HA例(优选分布2+2+1=5,勿用3+3+3=9):" +
-                    "[{region:'US_EAST_1',nodeCount:2,priority:7}," +
-                    "{region:'US_WEST_2',nodeCount:2,priority:6}," +
-                    "{region:'US_EAST_2',nodeCount:1,priority:5}]。" +
-                    "HA要求:≥3个不同region,每region≥1个electable节点,总数≥5且奇。"
+                "例:[{region:'US_EAST_1',nodeCount:3,priority:7}]。" + "HA例:2+2+1=5,各region≥1 electable,总数奇≥5。"
             ),
-        autoScaling: z
-            .boolean()
-            .default(true)
-            .describe(
-                "开启compute和disk自动扩缩(始终联动)。默认true。" +
-                    "所有生产cluster必须,变负载开发cluster也建议。" +
-                    "true时cluster在instanceSize(下限)和maxInstanceSize(上限)间自动伸缩。" +
-                    "仅静态负载设false。"
-            ),
-        maxInstanceSize: z
-            .enum(INSTANCE_SIZES)
-            .optional()
-            .describe(
-                "自动扩缩上限。不填则自动选合理值" +
-                    "(M10→M40,M20→M40,M30→M60,M40→M80,M50→M80,M60→M140)。" +
-                    "须大于instanceSize。"
-            ),
-        backupEnabled: z
-            .boolean()
-            .default(true)
-            .describe(
-                "开启持续云备份(每日快照)。默认true。" +
-                    "生产cluster(M30+)必开。" +
-                    "仅一次性开发/测试cluster可丢数据时设false。"
-            ),
+        autoScaling: z.boolean().default(true).describe("compute+disk扩缩。生产必true。"),
+        maxInstanceSize: z.enum(INSTANCE_SIZES).optional().describe("扩缩上限。空→自动。须>instanceSize。"),
+        backupEnabled: z.boolean().default(true).describe("云备份。生产必true。"),
     };
 
     protected async execute({

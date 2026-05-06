@@ -7,15 +7,12 @@ import { AtlasArgs } from "../../args.js";
 
 export class CreateFreeClusterTool extends AtlasToolBase {
     static toolName = "atlas-create-free-cluster";
-    public description =
-        "建免费(M0)MongoDB Atlas cluster。M0是共享免费层——无compute保证、" +
-        "无autoscaling、无备份,不适合生产或压测。" +
-        "专享、生产或autoscaling cluster请用atlas-create-advanced-cluster。";
+    public description = "建免费M0 Atlas cluster。仅试玩;生产/专享/扩缩→atlas-create-advanced-cluster。";
     static operationType: OperationType = "create";
     public argsShape = {
-        projectId: AtlasArgs.projectId().describe("建cluster的Atlas项目ID"),
+        projectId: AtlasArgs.projectId().describe("Atlas项目ID"),
         name: AtlasArgs.clusterName().describe("cluster名"),
-        region: AtlasArgs.region().describe("cluster region").default("US_EAST_1"),
+        region: AtlasArgs.region().describe("region").default("US_EAST_1"),
     };
 
     protected async execute({ projectId, name, region }: ToolArgs<typeof this.argsShape>): Promise<CallToolResult> {
