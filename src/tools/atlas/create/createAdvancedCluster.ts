@@ -157,6 +157,14 @@ export class CreateAdvancedClusterTool extends AtlasToolBase {
             );
         }
 
+        // Validate each region has at least 1 electable node
+        const zeroNodeRegions = regions.filter((r) => r.nodeCount < 1);
+        if (zeroNodeRegions.length > 0) {
+            throw new Error(
+                `Every region must have at least 1 electable node. Regions with 0 nodes: ${zeroNodeRegions.map((r) => r.region).join(", ")}`
+            );
+        }
+
         // Validate total electable nodes is odd
         const totalNodes = regions.reduce((sum, r) => sum + r.nodeCount, 0);
         if (totalNodes % 2 === 0) {
