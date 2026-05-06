@@ -148,6 +148,16 @@ export class CreateAdvancedClusterTool extends AtlasToolBase {
         const resolvedMax =
             maxInstanceSize ?? (AUTOSCALE_MAX_DEFAULTS[instanceSize] as (typeof INSTANCE_SIZES)[number]);
 
+        // Validate maxInstanceSize >= instanceSize
+        if (maxInstanceSize) {
+            const sizeOrder = INSTANCE_SIZES as readonly string[];
+            if (sizeOrder.indexOf(maxInstanceSize) <= sizeOrder.indexOf(instanceSize)) {
+                throw new Error(
+                    `maxInstanceSize (${maxInstanceSize}) must be larger than instanceSize (${instanceSize}).`
+                );
+            }
+        }
+
         // Validate unique priorities
         const priorities = regions.map((r) => r.priority);
         const uniquePriorities = new Set(priorities);
