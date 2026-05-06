@@ -109,12 +109,12 @@ export class CreateAdvancedClusterTool extends AtlasToolBase {
             ),
         autoScaling: z
             .boolean()
-            .default(false)
+            .default(true)
             .describe(
-                "Enable compute AND disk auto-scaling. " +
-                    "STRONGLY RECOMMENDED for any cluster that may see variable load (dev spikes, flash sales, seasonal traffic). " +
-                    "Required for all production clusters. " +
-                    "When true, the cluster scales between instanceSize (min) and maxInstanceSize automatically."
+                "Enable compute AND disk auto-scaling. Defaults to true. " +
+                    "Required for all production clusters and recommended for dev clusters that may see load spikes. " +
+                    "When true, the cluster scales between instanceSize (min) and maxInstanceSize automatically. " +
+                    "Only set to false for purely static workloads where you want to prevent any scaling."
             ),
         maxInstanceSize: z
             .enum(INSTANCE_SIZES)
