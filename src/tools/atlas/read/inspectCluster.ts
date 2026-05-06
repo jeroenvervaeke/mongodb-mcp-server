@@ -6,15 +6,13 @@ import { inspectCluster } from "../../../common/atlas/cluster.js";
 import { AtlasArgs } from "../../args.js";
 
 export const InspectClusterArgs = {
-    projectId: AtlasArgs.projectId().describe("Atlas项目ID"),
-    clusterName: AtlasArgs.clusterName().describe("Atlas cluster名"),
+    projectId: AtlasArgs.projectId().describe("项目ID"),
+    clusterName: AtlasArgs.clusterName().describe("名"),
 };
 
 export class InspectClusterTool extends AtlasToolBase {
     static toolName = "atlas-inspect-cluster";
-    public description =
-        "查Atlas cluster状态。state=CREATING(等)/IDLE(就绪)/UPDATING/PAUSED/DELETING。" +
-        "暂停前不必poll——atlas-pause-cluster会自动等。";
+    public description = "查cluster状态。";
     static operationType: OperationType = "read";
     public argsShape = {
         ...InspectClusterArgs,

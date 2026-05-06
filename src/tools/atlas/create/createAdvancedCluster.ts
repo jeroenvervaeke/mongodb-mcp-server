@@ -37,39 +37,24 @@ const AUTOSCALE_MAX_DEFAULTS: Record<string, string> = {
 };
 
 const RegionConfigSchema = z.object({
-    region: z.string().describe("AWS region。默认US_EAST_1。其他:US_WEST_2/US_EAST_2/EU_WEST_1/AP_SOUTHEAST_1。"),
-    nodeCount: z
-        .number()
-        .int()
-        .min(1)
-        .default(3)
-        .describe("本region electable数。单region→3;HA→2+2+1或3+1+1。总数奇≥5。"),
-    priority: z.number().int().min(1).max(7).default(7).describe("选举优先级。主→7,次→6/5/4。各region唯一。"),
+    region: z.string().describe("AWS region"),
+    nodeCount: z.number().int().min(1).default(3).describe("节点数"),
+    priority: z.number().int().min(1).max(7).default(7).describe("优先级 主=7"),
 });
 
 export class CreateAdvancedClusterTool extends AtlasToolBase {
     static toolName = "atlas-create-advanced-cluster";
-    public description =
-        "建AWS Atlas专享cluster。用例:测试→M10单region;生产省钱→M30 US_EAST_1;" +
-        "HA→M30+ 3 region 2+2+1。autoScaling+backup默认true。生产要暂停接调atlas-pause-cluster。";
+    public description = "建Atlas cluster。档:1=测试 M10 单region;2=生产 M30 US_EAST_1;3=HA M30+ 3region 2+2+1。";
     static operationType: OperationType = "create";
 
     public argsShape = {
-        projectId: AtlasArgs.projectId().describe("Atlas项目ID。无→atlas-list-clusters或bootstrap_outputs.json"),
-        name: AtlasArgs.clusterName().describe("cluster名"),
-        instanceSize: z
-            .enum(INSTANCE_SIZES)
-            .default("M10")
-            .describe("测试→M10;小测试→M20;生产/HA→M30;高吞吐/大库→M40+"),
-        regions: z
-            .array(RegionConfigSchema)
-            .min(1)
-            .describe(
-                "例:[{region:'US_EAST_1',nodeCount:3,priority:7}]。" + "HA例:2+2+1=5,各region≥1 electable,总数奇≥5。"
-            ),
-        autoScaling: z.boolean().default(true).describe("compute+disk扩缩。生产必true。"),
-        maxInstanceSize: z.enum(INSTANCE_SIZES).optional().describe("扩缩上限。空→自动。须>instanceSize。"),
-        backupEnabled: z.boolean().default(true).describe("云备份。生产必true。"),
+        projectId: AtlasArgs.projectId().describe("项目ID"),
+        name: AtlasArgs.clusterName().describe("名"),
+        instanceSize: z.enum(INSTANCE_SIZES).default("M10").describe("M10|M20|M30+"),
+        regions: z.array(RegionConfigSchema).min(1).describe("[{region,nodeCount,priority}]"),
+        autoScaling: z.boolean().default(true).describe("扩缩"),
+        maxInstanceSize: z.enum(INSTANCE_SIZES).optional().describe("扩缩上限"),
+        backupEnabled: z.boolean().default(true).describe("备份"),
     };
 
     protected async execute({

@@ -12,12 +12,12 @@ import { formatCluster, formatFlexCluster } from "../../../common/atlas/cluster.
 import { AtlasArgs } from "../../args.js";
 
 export const ListClustersArgs = {
-    projectId: AtlasArgs.projectId().describe("Atlas项目ID").optional(),
+    projectId: AtlasArgs.projectId().describe("项目ID").optional(),
 };
 
 export class ListClustersTool extends AtlasToolBase {
     static toolName = "atlas-list-clusters";
-    public description = "列Atlas cluster。无projectId→跨项目。返回名/state/实例。";
+    public description = "列cluster。";
     static operationType: OperationType = "read";
     public argsShape = {
         ...ListClustersArgs,
