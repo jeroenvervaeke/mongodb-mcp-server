@@ -14,8 +14,8 @@ export class InspectClusterTool extends AtlasToolBase {
     static toolName = "atlas-inspect-cluster";
     public description =
         "Inspect the current state and metadata of a MongoDB Atlas cluster. " +
-        "Use this to check stateName: CREATING (still provisioning), IDLE (ready), UPDATING, PAUSED, DELETING. " +
-        "stateName IDLE means the cluster is ready and can be paused via atlas-pause-cluster.";
+        "Use this to check state: CREATING (still provisioning), IDLE (ready), UPDATING, PAUSED, DELETING. " +
+        "state IDLE means the cluster is ready and can be paused via atlas-pause-cluster.";
     static operationType: OperationType = "read";
     public argsShape = {
         ...InspectClusterArgs,

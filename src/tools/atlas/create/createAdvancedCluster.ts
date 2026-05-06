@@ -40,7 +40,8 @@ const RegionConfigSchema = z.object({
     region: z
         .string()
         .describe(
-            "AWS region name. Common values: US_EAST_1 (N. Virginia, lowest cost, primary app region), " +
+            "AWS region name. For single-region clusters, use US_EAST_1 with priority=7. " +
+                "Common values: US_EAST_1 (N. Virginia, lowest cost, primary app region), " +
                 "US_WEST_2 (Oregon), US_EAST_2 (Ohio), EU_WEST_1 (Ireland), AP_SOUTHEAST_1 (Singapore). " +
                 "Use US_EAST_1 for single-region production unless told otherwise."
         ),
@@ -52,7 +53,8 @@ const RegionConfigSchema = z.object({
         .describe(
             "Electable nodes in this region. Use 3 for single-region. " +
                 "For 3-region HA distribute as 2+2+1 (5 total) or 3+1+1 (5 total). " +
-                "Total electable nodes across all regions must be odd (3, 5, 7) to guarantee quorum."
+                "Total electable nodes across all regions must be odd (3, 5, 7) to guarantee quorum; " +
+                "minimum 5 for production HA clusters."
         ),
     priority: z
         .number()
@@ -105,23 +107,23 @@ export class CreateAdvancedClusterTool extends AtlasToolBase {
                     "3-region HA example: [{region: 'US_EAST_1', nodeCount: 2, priority: 7}, " +
                     "{region: 'US_WEST_2', nodeCount: 2, priority: 6}, " +
                     "{region: 'US_EAST_2', nodeCount: 1, priority: 5}]. " +
-                    "HA requirement: 3+ distinct regions, electable nodes in each, total >= 5."
+                    "HA requirement: 3+ distinct regions, at least 1 electable node in EACH region, total >= 5."
             ),
         autoScaling: z
             .boolean()
             .default(true)
             .describe(
-                "Enable compute AND disk auto-scaling. Defaults to true. " +
-                    "Required for all production clusters and recommended for dev clusters that may see load spikes. " +
-                    "When true, the cluster scales between instanceSize (min) and maxInstanceSize automatically. " +
-                    "Only set to false for purely static workloads where you want to prevent any scaling."
+                "Enable compute AND disk auto-scaling (both always scale together). Defaults to true. " +
+                    "Required for all production clusters and recommended for dev clusters with variable load. " +
+                    "When true, the cluster scales between instanceSize (min) and maxInstanceSize (compute) automatically. " +
+                    "Only set to false for static workloads."
             ),
         maxInstanceSize: z
             .enum(INSTANCE_SIZES)
             .optional()
             .describe(
-                "Upper bound for auto-scaling. Required when autoScaling=true. " +
-                    "If omitted, defaults to a sensible ceiling (M10→M40, M30→M60, M40→M80). " +
+                "Upper bound for auto-scaling. If omitted, a sensible ceiling is chosen automatically " +
+                    "(M10→M40, M20→M40, M30→M60, M40→M80, M50→M80, M60→M140). " +
                     "Must be larger than instanceSize."
             ),
         backupEnabled: z
@@ -145,6 +147,24 @@ export class CreateAdvancedClusterTool extends AtlasToolBase {
     }: ToolArgs<typeof this.argsShape>): Promise<CallToolResult> {
         const resolvedMax =
             maxInstanceSize ?? (AUTOSCALE_MAX_DEFAULTS[instanceSize] as (typeof INSTANCE_SIZES)[number]);
+
+        // Validate unique priorities
+        const priorities = regions.map((r) => r.priority);
+        const uniquePriorities = new Set(priorities);
+        if (uniquePriorities.size !== priorities.length) {
+            throw new Error(
+                `All region priorities must be unique. Found duplicates in: ${regions.map((r) => `${r.region}=${r.priority}`).join(", ")}`
+            );
+        }
+
+        // Validate total electable nodes is odd
+        const totalNodes = regions.reduce((sum, r) => sum + r.nodeCount, 0);
+        if (totalNodes % 2 === 0) {
+            throw new Error(
+                `Total electable nodes (${totalNodes}) must be odd (3, 5, 7…) to maintain quorum. ` +
+                    `Adjust nodeCount values so they sum to an odd number.`
+            );
+        }
 
         const regionConfigs = regions.map((r) => {
             const config: Record<string, unknown> = {
@@ -180,7 +200,7 @@ export class CreateAdvancedClusterTool extends AtlasToolBase {
             clusterType: "REPLICASET",
             replicationSpecs: [
                 {
-                    zoneName: "Zone 1",
+                    zoneName: "Zone 1", // default zone name for single replication spec replica sets
                     regionConfigs,
                 },
             ],
@@ -198,9 +218,7 @@ export class CreateAdvancedClusterTool extends AtlasToolBase {
             .join(", ");
 
         const totalElectable = regions.reduce((sum, r) => sum + r.nodeCount, 0);
-        const isProduction = ["M30", "M40", "M50", "M60", "M80", "M140", "M200", "M300", "M400", "M700"].includes(
-            instanceSize
-        );
+        const isProduction = !["M10", "M20"].includes(instanceSize);
 
         return {
             content: [
@@ -215,8 +233,8 @@ export class CreateAdvancedClusterTool extends AtlasToolBase {
                         `\n` +
                         `The cluster is now provisioning (stateName: CREATING).\n` +
                         (isProduction
-                            ? `NEXT STEP: Call atlas-pause-cluster with projectId="${projectId}" and clusterName="${name}" ` +
-                              `to pause this cluster. That tool will wait for IDLE automatically before pausing.`
+                            ? `NEXT STEP: Call atlas-pause-cluster with projectId="${projectId}" and clusterName="${name}". ` +
+                              `That tool automatically waits for the cluster to reach IDLE before pausing — call it immediately.`
                             : `Use atlas-inspect-cluster to check stateName (CREATING → IDLE).`),
                 },
             ],
