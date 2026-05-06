@@ -83,7 +83,8 @@ export class CreateAdvancedClusterTool extends AtlasToolBase {
 
     public argsShape = {
         projectId: AtlasArgs.projectId().describe(
-            "Atlas project ID (read from bootstrap_outputs.json with jq -r '.project_id.value')"
+            "Atlas project ID. If unknown, call atlas-list-clusters (no projectId) to find all project IDs, " +
+                "or read from bootstrap_outputs.json with: jq -r '.project_id.value' bootstrap_outputs.json"
         ),
         name: AtlasArgs.clusterName().describe("Cluster name"),
         instanceSize: z
@@ -93,10 +94,10 @@ export class CreateAdvancedClusterTool extends AtlasToolBase {
                 "Instance size. " +
                     "M10: cheapest dedicated tier, best for dev/test with light load. " +
                     "M20: small dev workloads. " +
-                    "M30: MINIMUM for any production workload — handles hundreds of concurrent connections, " +
-                    "flash-sale bursts via autoscaling, and databases up to ~150 GB. " +
+                    "M30: MINIMUM for any production workload AND for all HA multi-region clusters — " +
+                    "handles hundreds of concurrent connections, flash-sale bursts via autoscaling, and databases up to ~150 GB. " +
                     "M40+: high-throughput production, large datasets, or many concurrent connections. " +
-                    "Rule of thumb: use M10 for dev, M30 for production."
+                    "Rule of thumb: use M10 for dev, M30 for production or any HA cluster."
             ),
         regions: z
             .array(RegionConfigSchema)
@@ -104,10 +105,11 @@ export class CreateAdvancedClusterTool extends AtlasToolBase {
             .describe(
                 "Region list. " +
                     "Single-region example: [{region: 'US_EAST_1', nodeCount: 3, priority: 7}]. " +
-                    "3-region HA example: [{region: 'US_EAST_1', nodeCount: 2, priority: 7}, " +
+                    "3-region HA example (PREFERRED distribution 2+2+1=5 total, NOT 3+3+3=9): " +
+                    "[{region: 'US_EAST_1', nodeCount: 2, priority: 7}, " +
                     "{region: 'US_WEST_2', nodeCount: 2, priority: 6}, " +
                     "{region: 'US_EAST_2', nodeCount: 1, priority: 5}]. " +
-                    "HA requirement: 3+ distinct regions, at least 1 electable node in EACH region, total >= 5."
+                    "HA requirement: 3+ distinct regions, at least 1 electable node in EACH region, total >= 5 and odd."
             ),
         autoScaling: z
             .boolean()
